@@ -7,6 +7,7 @@
 #[macro_use] extern crate log;
 #[macro_use] extern crate rocket_contrib;
 
+mod blogs;
 
 use diesel::SqliteConnection;
 use log::info;
@@ -14,6 +15,7 @@ use rocket::Rocket;
 use rocket::http::RawStr;
 use rocket::fairing::AdHoc;
 use rocket_contrib::templates::{Template};
+use blogs::Blog;
 
 // This macro from `diesel_migrations` defines an `embedded_migrations` module
 // containing a function named `run`. This allows the example to be run and
@@ -24,34 +26,67 @@ embed_migrations!();
 pub struct DbConn(SqliteConnection);
 
 
-
 #[derive(Serialize)]
-struct TemplateContext {
+struct HelloContext {
     title: &'static str,
     name: Option<String>,
-    items: Vec<&'static str>,
     // This key tells handlebars which template is the parent.
     parent: &'static str,
 }
 
+#[derive(Serialize)]
+struct BlogsContext {
+    title: &'static str,
+    blog: Option<Blog>,
+    blogs: Vec<Blog>,
+    parent: &'static str
+}
+
 #[get("/")]
 fn index() -> Template {
-    Template::render("layout", &TemplateContext{
-        title: "best title",
+    Template::render("hello", &HelloContext {
+        title: "Home",
         name: Some(format!("Stranger")),
-        items: vec![],
-        parent: ""
+        parent: "layout"
     })
 }
 
 #[get("/<name>")]
 fn hello(name: &RawStr) -> Template {
-    Template::render("layout", &TemplateContext{
-        title: "best title",
+    Template::render("hello", &HelloContext {
+        title: "Hello Someone",
         name: Some(format!("{}", name)),
-        items: vec![],
+        parent: "layout"
+    })
+}
+
+#[get("/")]
+fn list_blogs(conn: DbConn) -> Template {
+    Template::render("layout", &BlogsContext{
+        title: "Blog List",
+        blogs: Blog::all(&conn),
+        blog: None,
         parent: ""
     })
+}
+
+#[get("/<id>")]
+fn get_blog(id: i32, conn: DbConn) -> Template {
+
+    match Blog::get(id, &conn) {
+        Ok(_blog) => Template::render("blogs", &BlogsContext {
+            title: "A Blog",
+            blog: Some(_blog),
+            blogs: Blog::all(&conn),
+            parent: "layout"
+        }),
+        Err(err) => Template::render("blogs", &BlogsContext {
+            title: "Blog not found.",
+            blog: None,
+            blogs: Blog::all(&conn),
+            parent: "layout"
+        })
+    }
 }
 
 /// This will be run when the server is started, running migrations if necessary.
@@ -74,12 +109,13 @@ fn rocket() -> Rocket {
     rocket::ignite()
         .attach(DbConn::fairing())
         .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
-        .mount("/", routes![index, hello])
+        .mount("/", routes![index])
+        .mount("/blogs", routes![list_blogs, get_blog])
+        .mount("/hello", routes![hello])
         .attach(Template::fairing())
 }
 
 fn main() {
     rocket().launch();
 }
-
 

@@ -1,0 +1,10 @@
+{{#if blogs }}
+    <h3>Blogs: </h3>
+    <ul>
+        {{# each blogs}}
+            <li>
+                <a href="/blogs/{{ this.id }}">{{ this.title }}</a>
+            </li>
+        {{/each}}
+    </ul>
+{{/if}}
