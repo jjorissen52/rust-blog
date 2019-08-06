@@ -1,0 +1,10 @@
+{{#*inline "page"}}
+    {{#if post}}
+        <h5>{{ post.username }} says:</h5>
+        <p>{{ post.text }}</p>
+    {{else}}
+        <h1>Post not found :0</h1>
+    {{/if}}
+
+{{/inline}}
+{{~> (parent)~}}

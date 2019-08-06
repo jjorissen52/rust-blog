@@ -1,0 +1,10 @@
+{{#if posts }}
+    <h3>User Posts</h3>
+    <ul>
+        {{# each posts}}
+            <li>
+                <a href="/posts/{{ this.id }}">{{ this.username }}</a>
+            </li>
+        {{/each}}
+    </ul>
+{{/if}}

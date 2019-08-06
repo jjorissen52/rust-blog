@@ -83,13 +83,13 @@ fn list_blogs(conn: DbConn) -> Template {
 fn get_blog(id: i32, conn: DbConn) -> Template {
 
     match Blog::get(id, &conn) {
-        Ok(_blog) => Template::render("blogs", &BlogsContext {
+        Ok(_blog) => Template::render("blogs/blogs", &BlogsContext {
             title: "A Blog",
             blog: Some(_blog),
             blogs: Blog::all(&conn),
             parent: "layout"
         }),
-        Err(_err) => Template::render("blogs", &BlogsContext {
+        Err(_err) => Template::render("blogs/blogs", &BlogsContext {
             title: "Blog not found.",
             blog: None,
             blogs: Blog::all(&conn),
@@ -113,13 +113,13 @@ fn list_posts(conn: DbConn) -> Template {
 fn get_post(id: i32, conn: DbConn) -> Template {
 
     match Post::get(id, &conn) {
-        Ok(_post) => Template::render("blogs", &PostsContext {
+        Ok(_post) => Template::render("posts/posts", &PostsContext {
             title: "Viewing User Post",
             post: Some(_post),
             posts: Post::all(&conn),
             parent: "layout"
         }),
-        Err(_err) => Template::render("blogs", &PostsContext {
+        Err(_err) => Template::render("posts/posts", &PostsContext {
             title: "Post not found.",
             post: None,
             posts: Post::all(&conn),
