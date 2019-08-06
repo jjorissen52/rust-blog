@@ -6,8 +6,9 @@
 #[macro_use] extern crate diesel_migrations;
 #[macro_use] extern crate log;
 #[macro_use] extern crate rocket_contrib;
+//#[macro_use] extern crate macros;
 
-mod blogs;
+mod models;
 
 use diesel::SqliteConnection;
 use log::info;
@@ -15,7 +16,7 @@ use rocket::Rocket;
 use rocket::http::RawStr;
 use rocket::fairing::AdHoc;
 use rocket_contrib::templates::{Template};
-use blogs::Blog;
+use models::{Blog, Post};
 
 // This macro from `diesel_migrations` defines an `embedded_migrations` module
 // containing a function named `run`. This allows the example to be run and
@@ -39,6 +40,14 @@ struct BlogsContext {
     title: &'static str,
     blog: Option<Blog>,
     blogs: Vec<Blog>,
+    parent: &'static str
+}
+
+#[derive(Serialize)]
+struct PostsContext {
+    title: &'static str,
+    post: Option<Post>,
+    posts: Vec<Post>,
     parent: &'static str
 }
 
@@ -80,10 +89,40 @@ fn get_blog(id: i32, conn: DbConn) -> Template {
             blogs: Blog::all(&conn),
             parent: "layout"
         }),
-        Err(err) => Template::render("blogs", &BlogsContext {
+        Err(_err) => Template::render("blogs", &BlogsContext {
             title: "Blog not found.",
             blog: None,
             blogs: Blog::all(&conn),
+            parent: "layout"
+        })
+    }
+}
+
+
+#[get("/")]
+fn list_posts(conn: DbConn) -> Template {
+    Template::render("layout", &PostsContext{
+        title: "All User Posts",
+        post: None,
+        posts: Post::all(&conn),
+        parent: "layout"
+    })
+}
+
+#[get("/<id>")]
+fn get_post(id: i32, conn: DbConn) -> Template {
+
+    match Post::get(id, &conn) {
+        Ok(_post) => Template::render("blogs", &PostsContext {
+            title: "Viewing User Post",
+            post: Some(_post),
+            posts: Post::all(&conn),
+            parent: "layout"
+        }),
+        Err(_err) => Template::render("blogs", &PostsContext {
+            title: "Post not found.",
+            post: None,
+            posts: Post::all(&conn),
             parent: "layout"
         })
     }
@@ -111,6 +150,7 @@ fn rocket() -> Rocket {
         .attach(AdHoc::on_attach("Database Migrations", run_db_migrations))
         .mount("/", routes![index])
         .mount("/blogs", routes![list_blogs, get_blog])
+        .mount("/posts", routes![list_posts, get_post])
         .mount("/hello", routes![hello])
         .attach(Template::fairing())
 }
